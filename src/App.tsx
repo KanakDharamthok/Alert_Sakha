@@ -12,6 +12,7 @@ import EmergencyListPage from "./pages/EmergencyListPage";
 import EmergencyDetailPage from "./pages/EmergencyDetailPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ProfilePage from "./pages/ProfilePage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
