@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { AlertTriangle, Plus, Search, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
+import SOSModal from '@/components/emergency/SOSModal';
 import { useState } from 'react';
 
 const severityColor: Record<string, string> = {
@@ -28,6 +29,7 @@ export default function EmergencyListPage() {
   const { emergencies } = useEmergencyStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<EmergencyStatus | 'all'>('all');
+  const [sosOpen, setSosOpen] = useState(false);
 
   const filtered = emergencies.filter(e => {
     if (statusFilter !== 'all' && e.status !== statusFilter) return false;
@@ -43,7 +45,7 @@ export default function EmergencyListPage() {
             <h1 className="font-display text-2xl font-bold text-foreground">Emergencies</h1>
             <p className="text-muted-foreground text-sm mt-1">{emergencies.length} total incidents</p>
           </div>
-          <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-destructive text-destructive-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">
+          <button onClick={() => setSosOpen(true)} className="inline-flex items-center gap-2 px-4 py-2.5 bg-destructive text-destructive-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">
             <Plus className="w-4 h-4" /> Report SOS
           </button>
         </div>
@@ -100,6 +102,8 @@ export default function EmergencyListPage() {
           )}
         </div>
       </div>
+
+      <SOSModal open={sosOpen} onClose={() => setSosOpen(false)} />
     </AppLayout>
   );
 }

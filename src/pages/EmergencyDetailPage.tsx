@@ -1,9 +1,10 @@
 import { useParams, Link } from 'react-router-dom';
 import { useEmergencyStore } from '@/store/emergencyStore';
 import { motion } from 'framer-motion';
-import { ArrowLeft, AlertTriangle, MapPin, User, Clock, Send } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, MapPin, User, Clock } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-import { useState } from 'react';
+import EmergencyChat from '@/components/emergency/EmergencyChat';
+import EmergencyMap from '@/components/emergency/EmergencyMap';
 
 const severityColor: Record<string, string> = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -19,11 +20,24 @@ const statusColor: Record<string, string> = {
   closed: 'bg-muted text-muted-foreground',
 };
 
+// Mock coordinates for emergencies
+const locationCoords: Record<string, [number, number]> = {
+  '1': [25.2769, 55.2963],
+  '2': [25.2780, 55.2975],
+  '3': [25.2755, 55.2950],
+  '4': [25.2740, 55.2940],
+  '5': [25.2795, 55.2990],
+};
+
+const mockStaffMarkers = [
+  { id: 's1', lat: 25.2772, lng: 55.2958, label: 'Maria Santos', type: 'staff' as const, detail: 'Security Team' },
+  { id: 's2', lat: 25.2785, lng: 55.2970, label: 'Ahmed Khan', type: 'staff' as const, detail: 'Fire Response' },
+];
+
 export default function EmergencyDetailPage() {
   const { id } = useParams();
   const { getEmergency } = useEmergencyStore();
   const emergency = getEmergency(id || '');
-  const [message, setMessage] = useState('');
 
   if (!emergency) {
     return (
@@ -35,6 +49,12 @@ export default function EmergencyDetailPage() {
       </AppLayout>
     );
   }
+
+  const coords = locationCoords[emergency.id] || [25.2769, 55.2963];
+  const mapMarkers = [
+    { id: emergency.id, lat: coords[0], lng: coords[1], label: emergency.title, type: 'emergency' as const, detail: emergency.location },
+    ...mockStaffMarkers,
+  ];
 
   return (
     <AppLayout>
@@ -72,47 +92,42 @@ export default function EmergencyDetailPage() {
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Timeline */}
-          <div className="lg:col-span-2 bg-card rounded-xl border border-border card-shadow">
-            <div className="p-5 border-b border-border">
-              <h2 className="font-display font-semibold text-foreground">Incident Timeline</h2>
-            </div>
-            <div className="p-5">
-              <div className="space-y-4">
-                {emergency.timeline.map((t, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary/30" />
-                      {i < emergency.timeline.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
+          {/* Timeline + Chat */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-card rounded-xl border border-border card-shadow">
+              <div className="p-5 border-b border-border">
+                <h2 className="font-display font-semibold text-foreground">Incident Timeline</h2>
+              </div>
+              <div className="p-5">
+                <div className="space-y-4">
+                  {emergency.timeline.map((t, i) => (
+                    <div key={i} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary/30" />
+                        {i < emergency.timeline.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
+                      </div>
+                      <div className="pb-4">
+                        <div className="text-sm font-medium text-foreground">{t.event}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{t.time} • {t.by}</div>
+                      </div>
                     </div>
-                    <div className="pb-4">
-                      <div className="text-sm font-medium text-foreground">{t.event}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{t.time} • {t.by}</div>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Chat */}
-            <div className="border-t border-border p-5">
-              <h3 className="font-display font-semibold text-foreground mb-4">Emergency Chat</h3>
-              <div className="bg-muted rounded-xl p-4 mb-4 min-h-[120px]">
-                <p className="text-sm text-muted-foreground text-center">No messages yet</p>
+            <div className="bg-card rounded-xl border border-border card-shadow">
+              <div className="p-5 border-b border-border">
+                <h2 className="font-display font-semibold text-foreground">Emergency Chat</h2>
               </div>
-              <div className="flex gap-2">
-                <input
-                  placeholder="Type a message..." value={message} onChange={e => setMessage(e.target.value)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <button className="px-4 py-2.5 bg-primary text-primary-foreground rounded-xl hover:opacity-90 transition-opacity">
-                  <Send className="w-4 h-4" />
-                </button>
+              <div className="p-5">
+                <EmergencyChat emergencyId={emergency.id} />
               </div>
             </div>
           </div>
 
-          {/* Sidebar info */}
+          {/* Sidebar */}
           <div className="space-y-4">
             <div className="bg-card rounded-xl border border-border p-5 card-shadow">
               <h3 className="font-display font-semibold text-foreground mb-3">Assigned To</h3>
@@ -127,11 +142,10 @@ export default function EmergencyDetailPage() {
               </div>
             </div>
 
+            {/* Map */}
             <div className="bg-card rounded-xl border border-border p-5 card-shadow">
               <h3 className="font-display font-semibold text-foreground mb-3">Location</h3>
-              <div className="bg-muted rounded-xl h-40 flex items-center justify-center">
-                <MapPin className="w-8 h-8 text-muted-foreground" />
-              </div>
+              <EmergencyMap markers={mapMarkers} center={coords} zoom={15} className="h-48" />
               <p className="text-sm text-muted-foreground mt-3">{emergency.location}</p>
             </div>
 

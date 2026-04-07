@@ -3,13 +3,14 @@ import { useAuthStore } from '@/store/authStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, AlertTriangle, Bell, User, LogOut, Menu, X, Shield, ChevronDown
+  LayoutDashboard, AlertTriangle, Bell, User, LogOut, Menu, X, Shield, ChevronDown, BarChart3
 } from 'lucide-react';
 import { useState } from 'react';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/emergencies', label: 'Emergencies', icon: AlertTriangle },
+  { path: '/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/notifications', label: 'Notifications', icon: Bell },
   { path: '/profile', label: 'Profile', icon: User },
 ];
