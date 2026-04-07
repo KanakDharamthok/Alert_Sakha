@@ -80,9 +80,22 @@ const mockEmergencies: Emergency[] = [
 interface EmergencyState {
   emergencies: Emergency[];
   getEmergency: (id: string) => Emergency | undefined;
+  addEmergency: (data: { title: string; type: EmergencyType; severity: Severity; description: string; location: string; reportedBy: string }) => void;
 }
 
 export const useEmergencyStore = create<EmergencyState>((set, get) => ({
   emergencies: mockEmergencies,
   getEmergency: (id: string) => get().emergencies.find(e => e.id === id),
+  addEmergency: (data) => {
+    const now = new Date().toISOString();
+    const newEmergency: Emergency = {
+      id: Date.now().toString(),
+      ...data,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+      timeline: [{ time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), event: 'Emergency reported', by: data.reportedBy }],
+    };
+    set({ emergencies: [newEmergency, ...get().emergencies] });
+  },
 }));
