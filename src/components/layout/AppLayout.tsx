@@ -3,8 +3,9 @@ import { useAuthStore } from '@/store/authStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, AlertTriangle, Bell, User, LogOut, Menu, X, Shield, ChevronDown, BarChart3
+  LayoutDashboard, AlertTriangle, Bell, User, LogOut, Menu, X, ChevronDown, BarChart3
 } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 import { useState } from 'react';
 
 const navItems = [
