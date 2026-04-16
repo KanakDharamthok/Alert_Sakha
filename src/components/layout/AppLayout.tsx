@@ -49,9 +49,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex items-center gap-3 px-6 py-5 border-b border-border">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-            <Shield className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <img src={logoImg} alt="AlertSakha" className="w-9 h-9 rounded-lg object-contain" />
           <span className="font-display font-bold text-lg text-foreground">AlertSakha</span>
           <button className="ml-auto lg:hidden" onClick={() => setSidebarOpen(false)}>
             <X className="w-5 h-5 text-muted-foreground" />

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Zap, Bell, Users, MapPin, BarChart3, Clock, ArrowRight, Star, CheckCircle } from 'lucide-react';
+import { Zap, Bell, Users, MapPin, BarChart3, Clock, ArrowRight, Star, CheckCircle } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } };
 

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import { motion } from 'framer-motion';
-import { Shield, Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
