@@ -21,7 +21,7 @@ const stats = [
 ];
 
 const testimonials = [
-  { name: 'Sarah Chen', role: 'Hotel Manager, Grand Pacific', text: 'CrisisGuard reduced our emergency response time by 70%. The real-time notifications are a game-changer.' },
+  { name: 'Sarah Chen', role: 'Hotel Manager, Grand Pacific', text: 'AlertSakha reduced our emergency response time by 70%. The real-time notifications are a game-changer.' },
   { name: 'Michael Torres', role: 'Security Director, Luxe Resorts', text: 'The incident management system is intuitive and powerful. Our team adopted it immediately.' },
   { name: 'Priya Sharma', role: 'Operations Head, Coastal Hotels', text: 'Having a centralized emergency system has transformed how we handle guest safety.' },
 ];
@@ -36,7 +36,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Shield className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-lg text-foreground">CrisisGuard</span>
+            <span className="font-display font-bold text-lg text-foreground">AlertSakha</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
@@ -116,7 +116,7 @@ export default function LandingPage() {
       <section className="max-w-6xl mx-auto px-6 py-20">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-            <h2 className="font-display text-3xl font-bold text-foreground mb-6">Why Choose CrisisGuard?</h2>
+            <h2 className="font-display text-3xl font-bold text-foreground mb-6">Why Choose AlertSakha?</h2>
             <div className="space-y-4">
               {['Reduce response times by up to 70%', 'Complete incident audit trail', 'Role-based access for your entire team', 'Real-time communication channels', 'Works on any device, anywhere'].map(b => (
                 <div key={b} className="flex items-start gap-3">
@@ -191,9 +191,9 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            <span className="font-display font-bold text-foreground">CrisisGuard</span>
+            <span className="font-display font-bold text-foreground">AlertSakha</span>
           </div>
-          <p className="text-sm text-muted-foreground">© 2026 CrisisGuard. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2026 AlertSakha. All rights reserved.</p>
         </div>
       </footer>
     </div>
