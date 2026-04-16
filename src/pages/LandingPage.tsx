@@ -34,9 +34,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Shield className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img src={logoImg} alt="AlertSakha" className="w-8 h-8 rounded-lg object-contain" />
             <span className="font-display font-bold text-lg text-foreground">AlertSakha</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
@@ -191,7 +189,7 @@ export default function LandingPage() {
       <footer className="border-t border-border py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
+            <img src={logoImg} alt="AlertSakha" className="w-6 h-6 object-contain" />
             <span className="font-display font-bold text-foreground">AlertSakha</span>
           </div>
           <p className="text-sm text-muted-foreground">© 2026 AlertSakha. All rights reserved.</p>

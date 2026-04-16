@@ -60,9 +60,7 @@ export default function LoginPage() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4">
-            <Shield className="w-7 h-7 text-primary-foreground" />
-          </div>
+          <img src={logoImg} alt="AlertSakha" className="w-14 h-14 rounded-2xl object-contain mx-auto mb-4" />
           <h1 className="font-display text-2xl font-bold text-foreground">AlertSakha</h1>
           <p className="text-muted-foreground text-sm mt-1">Rapid Crisis Response System</p>
         </div>
