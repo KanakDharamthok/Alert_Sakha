@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertTriangle, MapPin, Send } from 'lucide-react';
+import { X, AlertTriangle, MapPin, Send, ImagePlus, Loader2 } from 'lucide-react';
 import { useEmergencyStore, EmergencyType, Severity } from '@/store/emergencyStore';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuthStore } from '@/store/authStore';
+import { toast } from 'sonner';
 
 const emergencyTypes: { value: EmergencyType; label: string; emoji: string }[] = [
   { value: 'fire', label: 'Fire', emoji: '🔥' },
@@ -27,24 +30,94 @@ interface SOSModalProps {
 
 export default function SOSModal({ open, onClose }: SOSModalProps) {
   const { addEmergency } = useEmergencyStore();
+  const { user } = useAuthStore();
   const [type, setType] = useState<EmergencyType>('fire');
   const [severity, setSeverity] = useState<Severity>('high');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_FILES = 5;
+  const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? []);
+    if (!picked.length) return;
+
+    const valid: File[] = [];
+    for (const f of picked) {
+      if (!f.type.startsWith('image/')) {
+        toast.error(`${f.name} is not an image`);
+        continue;
+      }
+      if (f.size > MAX_BYTES) {
+        toast.error(`${f.name} is over 5MB`);
+        continue;
+      }
+      valid.push(f);
+    }
+
+    const merged = [...files, ...valid].slice(0, MAX_FILES);
+    if (files.length + valid.length > MAX_FILES) {
+      toast.error(`Up to ${MAX_FILES} images allowed`);
+    }
+    setFiles(merged);
+    setPreviews(merged.map(f => URL.createObjectURL(f)));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeFile = (idx: number) => {
+    const next = files.filter((_, i) => i !== idx);
+    setFiles(next);
+    setPreviews(next.map(f => URL.createObjectURL(f)));
+  };
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (!files.length) return [];
+    if (!user) {
+      toast.error('You must be signed in to upload images');
+      return [];
+    }
+    const urls: string[] = [];
+    for (const file of files) {
+      const ext = file.name.split('.').pop() ?? 'jpg';
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage.from('incident-images').upload(path, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type,
+      });
+      if (error) {
+        toast.error(`Failed to upload ${file.name}: ${error.message}`);
+        continue;
+      }
+      const { data } = supabase.storage.from('incident-images').getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }
+    return urls;
+  };
 
   const handleSubmit = async () => {
     if (!title || !description || !location) return;
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 600));
-    addEmergency({
-      title, type, severity, description, location,
-      reportedBy: 'Current User',
-    });
-    setSubmitting(false);
-    setTitle(''); setDescription(''); setLocation('');
-    onClose();
+    try {
+      const imageUrls = await uploadImages();
+      addEmergency({
+        title, type, severity, description, location,
+        reportedBy: user?.name ?? 'Current User',
+        imageUrls,
+      });
+      toast.success('Emergency reported');
+      setTitle(''); setDescription(''); setLocation('');
+      setFiles([]); setPreviews([]);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -130,6 +203,45 @@ export default function SOSModal({ open, onClose }: SOSModalProps) {
                   className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                 />
               </div>
+
+              {/* Images */}
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">
+                  Photos <span className="text-muted-foreground font-normal">(optional, max {MAX_FILES})</span>
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {previews.map((src, i) => (
+                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-border group">
+                      <img src={src} alt={`Upload ${i + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeFile(i)}
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-foreground/70 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {files.length < MAX_FILES && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                    >
+                      <ImagePlus className="w-5 h-5" />
+                      <span className="text-[10px] font-medium">Add</span>
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFilesSelected}
+                />
+              </div>
             </div>
 
             <div className="p-5 border-t border-border flex gap-3">
@@ -139,7 +251,7 @@ export default function SOSModal({ open, onClose }: SOSModalProps) {
               <button onClick={handleSubmit} disabled={!title || !description || !location || submitting}
                 className="flex-1 py-2.5 bg-destructive text-destructive-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                <Send className="w-4 h-4" />
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {submitting ? 'Submitting...' : 'Submit SOS'}
               </button>
             </div>
