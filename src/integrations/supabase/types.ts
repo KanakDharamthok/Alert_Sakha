@@ -77,6 +77,63 @@ export type Database = {
         }
         Relationships: []
       }
+      role_requests: {
+        Row: {
+          approval_status: Database["public"]["Enums"]["approval_status"]
+          business_license_number: string | null
+          created_at: string
+          email: string
+          employee_id: string | null
+          full_name: string
+          hotel_name: string | null
+          id: string
+          id_proof_url: string | null
+          organization_name: string | null
+          requested_role: Database["public"]["Enums"]["app_role"]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          business_license_number?: string | null
+          created_at?: string
+          email: string
+          employee_id?: string | null
+          full_name: string
+          hotel_name?: string | null
+          id?: string
+          id_proof_url?: string | null
+          organization_name?: string | null
+          requested_role: Database["public"]["Enums"]["app_role"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          business_license_number?: string | null
+          created_at?: string
+          email?: string
+          employee_id?: string | null
+          full_name?: string
+          hotel_name?: string | null
+          id?: string
+          id_proof_url?: string | null
+          organization_name?: string | null
+          requested_role?: Database["public"]["Enums"]["app_role"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -103,6 +160,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_role_request: {
+        Args: { _notes?: string; _request_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -110,9 +171,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      reject_role_request: {
+        Args: { _notes?: string; _request_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "guest" | "staff" | "manager" | "security" | "admin"
+      approval_status: "pending" | "approved" | "rejected"
       emergency_status: "active" | "in_progress" | "resolved" | "closed"
     }
     CompositeTypes: {
@@ -242,6 +308,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["guest", "staff", "manager", "security", "admin"],
+      approval_status: ["pending", "approved", "rejected"],
       emergency_status: ["active", "in_progress", "resolved", "closed"],
     },
   },
