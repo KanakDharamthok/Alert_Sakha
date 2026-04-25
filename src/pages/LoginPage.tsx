@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore, UserRole } from '@/store/authStore';
 import { motion } from 'framer-motion';
@@ -15,8 +15,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login, signup, loginWithGoogle } = useAuthStore();
+  const { login, signup, loginWithGoogle, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+
+  // Once a session lands (e.g. after Google redirect), bounce to the dashboard.
+  useEffect(() => {
+    if (isAuthenticated) navigate('/dashboard', { replace: true });
+  }, [isAuthenticated, navigate]);
 
   const roles: { value: UserRole; label: string }[] = [
     { value: 'guest', label: 'Guest / User' },
