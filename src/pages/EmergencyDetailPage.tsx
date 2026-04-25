@@ -125,6 +125,22 @@ export default function EmergencyDetailPage() {
                 <EmergencyChat emergencyId={emergency.id} />
               </div>
             </div>
+
+            {/* Photos */}
+            {emergency.imageUrls && emergency.imageUrls.length > 0 && (
+              <div className="bg-card rounded-xl border border-border card-shadow">
+                <div className="p-5 border-b border-border">
+                  <h2 className="font-display font-semibold text-foreground">Incident Photos</h2>
+                </div>
+                <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {emergency.imageUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer" className="aspect-square rounded-xl overflow-hidden border border-border block hover:opacity-90 transition-opacity">
+                      <img src={url} alt={`Incident photo ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}

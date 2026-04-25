@@ -17,6 +17,7 @@ export interface Emergency {
   createdAt: string;
   updatedAt: string;
   timeline: { time: string; event: string; by: string }[];
+  imageUrls?: string[];
 }
 
 const mockEmergencies: Emergency[] = [
@@ -80,7 +81,7 @@ const mockEmergencies: Emergency[] = [
 interface EmergencyState {
   emergencies: Emergency[];
   getEmergency: (id: string) => Emergency | undefined;
-  addEmergency: (data: { title: string; type: EmergencyType; severity: Severity; description: string; location: string; reportedBy: string }) => void;
+  addEmergency: (data: { title: string; type: EmergencyType; severity: Severity; description: string; location: string; reportedBy: string; imageUrls?: string[] }) => void;
 }
 
 export const useEmergencyStore = create<EmergencyState>((set, get) => ({

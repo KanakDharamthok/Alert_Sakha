@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          image_urls: string[]
           location: string
           status: Database["public"]["Enums"]["emergency_status"]
           title: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
+          image_urls?: string[]
           location: string
           status?: Database["public"]["Enums"]["emergency_status"]
           title: string
@@ -39,6 +41,7 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          image_urls?: string[]
           location?: string
           status?: Database["public"]["Enums"]["emergency_status"]
           title?: string
