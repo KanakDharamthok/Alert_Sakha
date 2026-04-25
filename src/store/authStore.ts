@@ -4,6 +4,17 @@ import { lovable } from '@/integrations/lovable';
 import type { Session } from '@supabase/supabase-js';
 
 export type UserRole = 'guest' | 'staff' | 'manager' | 'security' | 'admin';
+export type RequestableRole = Exclude<UserRole, 'admin'>;
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export interface RoleRequestPayload {
+  requested_role: RequestableRole;
+  hotel_name?: string;
+  employee_id?: string;
+  business_license_number?: string;
+  organization_name?: string;
+  id_proof_url?: string;
+}
 
 export interface User {
   id: string;
@@ -20,7 +31,12 @@ interface AuthState {
   loading: boolean;
   initialize: () => () => void;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  signup: (
+    name: string,
+    email: string,
+    password: string,
+    request: RoleRequestPayload
+  ) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -75,14 +91,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (error) throw error;
   },
 
-  signup: async (name, email, password, role) => {
+  signup: async (name, email, password, request) => {
     const redirectUrl = `${window.location.origin}/dashboard`;
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: { display_name: name, role },
+        data: {
+          display_name: name,
+          requested_role: request.requested_role,
+          hotel_name: request.hotel_name ?? '',
+          employee_id: request.employee_id ?? '',
+          business_license_number: request.business_license_number ?? '',
+          organization_name: request.organization_name ?? '',
+          id_proof_url: request.id_proof_url ?? '',
+        },
       },
     });
     if (error) throw error;

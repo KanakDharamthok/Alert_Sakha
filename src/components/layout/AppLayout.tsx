@@ -3,12 +3,12 @@ import { useAuthStore } from '@/store/authStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, AlertTriangle, Bell, User, LogOut, Menu, X, ChevronDown, BarChart3
+  LayoutDashboard, AlertTriangle, Bell, User, LogOut, Menu, X, ChevronDown, BarChart3, Shield
 } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
 import { useState } from 'react';
 
-const navItems = [
+const baseNavItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/emergencies', label: 'Emergencies', icon: AlertTriangle },
   { path: '/analytics', label: 'Analytics', icon: BarChart3 },
@@ -23,6 +23,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const navItems = user?.role === 'admin'
+    ? [...baseNavItems, { path: '/admin/approvals', label: 'Approvals', icon: Shield }]
+    : baseNavItems;
 
   const handleLogout = async () => {
     await logout();
