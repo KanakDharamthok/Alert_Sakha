@@ -83,6 +83,12 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       const errText = await response.text();
       console.error("Gemini API error:", response.status, errText);
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "AI provider rate limit / quota exceeded. Try again later." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
       return new Response(
         JSON.stringify({ error: "Failed to generate response from AI provider" }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
