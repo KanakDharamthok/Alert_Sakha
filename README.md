@@ -2,15 +2,16 @@
 
 **When Every Second Matters**
 
-AlertSakha is a high-performance, real-time emergency management platform designed to digitize and streamline crisis response in hospitality venues such as hotels, resorts, and large-scale hospitality businesses.
-
 - Live Prototype Link: https://alertsakha.lovable.app
 
 ---
 
 ## 🚀 Project Overview
 
-AlertSakha connects distressed guests, on-site staff, and emergency services through a single unified system, ensuring transparency, efficiency, and real-time coordination during unpredictable crises.
+AlertSakha is a real-time emergency response platform designed for hospitality environments such as hotels and resorts. It enables fast and coordinated action between guests, staff, and administrators through a unified digital system.
+
+The prototype is built using Lovable with integrated cloud backend and AI capabilities powered by Google Gemini.
+
 
 ---
 
@@ -25,7 +26,12 @@ AlertSakha connects distressed guests, on-site staff, and emergency services thr
 
 ##  Solution
 
-A role-based digital platform that acts as a robust bridge for crisis coordination, offering instant SOS reporting, live location tracking, and real-time emergency broadcasts to eliminate fragmented communication.
+A role-based platform that provides:
+
+- Instant SOS reporting
+- Real-time coordination
+- Centralized dashboards
+- AI-assisted incident understanding
 
 ---
 
@@ -41,7 +47,7 @@ A role-based digital platform that acts as a robust bridge for crisis coordinati
 
 ##  User Roles
 
-### 👑 Admin/ Hotel Manager
+### 👑 Admin/ Hotel Manager (Restricted Access)
 
 - Monitor all active and resolved emergencies via a central dashboard.
 - Manage staff users and monitor notification logs.
@@ -61,10 +67,13 @@ A role-based digital platform that acts as a robust bridge for crisis coordinati
 
 ## 🛠️ Technology Stack
 
-- Frontend: React.js, Tailwind CSS, Framer Motion
-- Backend: Node.js, Express.js
-- Database: MongoDB
-- Real-Time Engine: Socket.io (Used for all SOS updates and emergency broadcasts)
+- Frontend: React.js, Tailwind CSS
+- Backend: Lovable Cloud (managed backend)
+- Database: Cloud database (auto-generated schemas)
+- Authentication: Built-in email authentication
+- Storage: Cloud storage for evidence uploads
+- AI Integration: Google Gemini via Edge Functions
+- Deployment: Lovable Publish (serverless hosting)
 - Version Control: Git & GitHub
 
 ## 🎯 Future Enhancements
