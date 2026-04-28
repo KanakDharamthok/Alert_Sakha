@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     const systemInstruction =
       "You are an emergency-response analyst. Given an incident description, respond ONLY with a JSON object matching this schema: " +
       `{ "severity": "low" | "medium" | "high" | "critical", "summary": string (1-2 sentences), "recommended_actions": string[] (3-6 concise steps) }. ` +
