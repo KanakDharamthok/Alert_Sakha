@@ -1,4 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useEmergencyStore } from '@/store/emergencyStore';
 import { motion } from 'framer-motion';
 import { ArrowLeft, AlertTriangle, MapPin, User, Clock } from 'lucide-react';
@@ -33,6 +35,32 @@ const mockStaffMarkers = [
   { id: 's1', lat: 25.2772, lng: 55.2958, label: 'Maria Santos', type: 'staff' as const, detail: 'Security Team' },
   { id: 's2', lat: 25.2785, lng: 55.2970, label: 'Ahmed Khan', type: 'staff' as const, detail: 'Fire Response' },
 ];
+
+// Resolve a stored value (storage path or legacy public URL) to a viewable URL.
+// New uploads store paths like "<userId>/<file>.jpg"; legacy rows may contain full URLs.
+function IncidentImage({ value, alt }: { value: string; alt: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (/^https?:\/\//i.test(value)) {
+      setUrl(value);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase.storage
+        .from('incident-images')
+        .createSignedUrl(value, 3600);
+      if (!cancelled) setUrl(data?.signedUrl ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [value]);
+  if (!url) return <div className="w-full h-full bg-muted animate-pulse" />;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="aspect-square rounded-xl overflow-hidden border border-border block hover:opacity-90 transition-opacity">
+      <img src={url} alt={alt} className="w-full h-full object-cover" loading="lazy" />
+    </a>
+  );
+}
 
 export default function EmergencyDetailPage() {
   const { id } = useParams();
@@ -133,10 +161,8 @@ export default function EmergencyDetailPage() {
                   <h2 className="font-display font-semibold text-foreground">Incident Photos</h2>
                 </div>
                 <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {emergency.imageUrls.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noreferrer" className="aspect-square rounded-xl overflow-hidden border border-border block hover:opacity-90 transition-opacity">
-                      <img src={url} alt={`Incident photo ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
-                    </a>
+                  {emergency.imageUrls.map((value, i) => (
+                    <IncidentImage key={i} value={value} alt={`Incident photo ${i + 1}`} />
                   ))}
                 </div>
               </div>

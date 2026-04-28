@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import UpdatePasswordPage from "./pages/UpdatePasswordPage";
 import DashboardPage from "./pages/DashboardPage";
 import EmergencyListPage from "./pages/EmergencyListPage";
 import EmergencyDetailPage from "./pages/EmergencyDetailPage";
@@ -93,6 +94,7 @@ const App = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/update-password" element={<UpdatePasswordPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/emergencies" element={<ProtectedRoute><EmergencyListPage /></ProtectedRoute>} />
           <Route path="/emergencies/:id" element={<ProtectedRoute><EmergencyDetailPage /></ProtectedRoute>} />

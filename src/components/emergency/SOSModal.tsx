@@ -95,8 +95,8 @@ export default function SOSModal({ open, onClose }: SOSModalProps) {
         toast.error(`Failed to upload ${file.name}: ${error.message}`);
         continue;
       }
-      const { data } = supabase.storage.from('incident-images').getPublicUrl(path);
-      urls.push(data.publicUrl);
+      // Store the storage path (not a public URL). Display code creates short-lived signed URLs.
+      urls.push(path);
     }
     return urls;
   };
