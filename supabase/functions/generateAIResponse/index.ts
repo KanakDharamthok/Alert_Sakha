@@ -54,12 +54,29 @@ Deno.serve(async (req) => {
     }
 
     const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const systemInstruction =
+      "You are an emergency-response analyst. Given an incident description, respond ONLY with a JSON object matching this schema: " +
+      `{ "severity": "low" | "medium" | "high" | "critical", "summary": string (1-2 sentences), "recommended_actions": string[] (3-6 concise steps) }. ` +
+      "Do not include any text outside of the JSON.";
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemInstruction }] },
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS },
+        generationConfig: {
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              severity: { type: "STRING", enum: ["low", "medium", "high", "critical"] },
+              summary: { type: "STRING" },
+              recommended_actions: { type: "ARRAY", items: { type: "STRING" } },
+            },
+            required: ["severity", "summary", "recommended_actions"],
+          },
+        },
       }),
     });
 
@@ -82,7 +99,36 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ result: text }), {
+    let parsed: { severity?: string; summary?: string; recommended_actions?: string[] };
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      console.error("Model did not return valid JSON:", text);
+      return new Response(JSON.stringify({ error: "Invalid AI response format" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const allowed = ["low", "medium", "high", "critical"];
+    if (
+      !parsed ||
+      typeof parsed.summary !== "string" ||
+      !allowed.includes(String(parsed.severity)) ||
+      !Array.isArray(parsed.recommended_actions) ||
+      !parsed.recommended_actions.every((a) => typeof a === "string")
+    ) {
+      return new Response(JSON.stringify({ error: "AI response missing required fields" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({
+      severity: parsed.severity,
+      summary: parsed.summary,
+      recommended_actions: parsed.recommended_actions,
+    }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
