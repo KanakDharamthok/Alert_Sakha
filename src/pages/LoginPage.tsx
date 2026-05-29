@@ -64,7 +64,7 @@ export default function LoginPage() {
       errs.name = validateField('name', name);
       errs.email = validateField('email', email);
       if (!errs.email && isDisposableEmail(email)) {
-        errs.email = 'Please use a permanent email address. Disposable providers are not allowed.';
+        errs.email = 'Please use a valid, permanent email address. Temporary domains are not permitted for security reasons.';
       }
       errs.password = validateField('password', password);
       if (password !== confirmPassword) errs.confirmPassword = 'Passwords do not match';
