@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore, RequestableRole } from '@/store/authStore';
 import { supabase } from '@/integrations/supabase/client';
 import { isDisposableEmail } from '@/lib/disposableEmails';
+import { validateField, FieldName } from '@/lib/signupValidation';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Building2, BadgeCheck, FileText, Upload, MailCheck } from 'lucide-react';
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [verifyPending, setVerifyPending] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldName | 'confirmPassword', string>>>({});
   const { login, signup, loginWithGoogle, resendVerification, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
@@ -46,33 +48,30 @@ export default function LoginPage() {
     setError('');
     setVerifyPending(null);
 
-    if (isSignUp && password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (isSignUp && isDisposableEmail(email)) {
-      setError('Please use a permanent email address. Disposable email providers are not allowed.');
-      return;
-    }
-
     if (isSignUp) {
-      if (role === 'staff' && (!hotelName.trim() || !employeeId.trim())) {
-        setError('Hotel name and employee ID are required.');
-        return;
+      const errs: Partial<Record<FieldName | 'confirmPassword', string>> = {};
+      errs.name = validateField('name', name);
+      errs.email = validateField('email', email);
+      if (!errs.email && isDisposableEmail(email)) {
+        errs.email = 'Please use a permanent email address. Disposable providers are not allowed.';
       }
-      if (role === 'manager' && (!hotelName.trim() || !businessLicense.trim())) {
-        setError('Hotel name and business license number are required.');
-        return;
+      errs.password = validateField('password', password);
+      if (password !== confirmPassword) errs.confirmPassword = 'Passwords do not match';
+
+      if (role === 'staff' || role === 'manager') errs.hotelName = validateField('hotelName', hotelName);
+      if (role === 'staff') errs.employeeId = validateField('employeeId', employeeId);
+      if (role === 'manager') errs.businessLicense = validateField('businessLicense', businessLicense);
+      if (role === 'security') {
+        errs.organizationName = validateField('organizationName', organizationName);
+        if (!idProofFile) setError('Please upload an ID proof (PDF or image).');
+        else if (idProofFile.size > 5 * 1024 * 1024) setError('ID proof must be under 5MB.');
       }
-      if (role === 'security' && (!organizationName.trim() || !idProofFile)) {
-        setError('Organization name and ID proof file are required.');
-        return;
-      }
-      if (idProofFile && idProofFile.size > 5 * 1024 * 1024) {
-        setError('ID proof must be under 5MB.');
-        return;
-      }
+
+      // Strip undefined entries
+      const cleaned = Object.fromEntries(Object.entries(errs).filter(([, v]) => v)) as typeof errs;
+      setFieldErrors(cleaned);
+      if (Object.keys(cleaned).length > 0) return;
+      if (role === 'security' && (!idProofFile || idProofFile.size > 5 * 1024 * 1024)) return;
     }
 
     setLoading(true);
