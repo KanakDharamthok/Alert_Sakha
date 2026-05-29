@@ -31,6 +31,17 @@ export default function LoginPage() {
   const { login, signup, loginWithGoogle, resendVerification, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
+  const setFieldErr = (key: FieldName | 'confirmPassword', msg?: string) =>
+    setFieldErrors(prev => ({ ...prev, [key]: msg }));
+
+  const handleBlur = (key: FieldName, value: string) => {
+    if (!isSignUp) return;
+    setFieldErr(key, validateField(key, value));
+  };
+
+  const FieldError = ({ msg }: { msg?: string }) =>
+    msg ? <p className="text-xs text-destructive mt-1.5 ml-1">{msg}</p> : null;
+
   // Once a session lands (e.g. after Google redirect), bounce to the dashboard.
   useEffect(() => {
     if (isAuthenticated) navigate('/dashboard', { replace: true });
