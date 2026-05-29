@@ -47,6 +47,7 @@ interface AuthState {
   ) => Promise<{ requiresEmailConfirmation: boolean }>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 async function buildUser(session: Session | null): Promise<User | null> {
