@@ -243,46 +243,62 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text" placeholder="Full name" value={name}
-                  onChange={e => setName(e.target.value)} required
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
+              <div>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="text" placeholder="Full name (letters only)" value={name}
+                    onChange={e => { setName(e.target.value); if (fieldErrors.name) setFieldErr('name', validateField('name', e.target.value)); }}
+                    onBlur={e => handleBlur('name', e.target.value)} required
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${fieldErrors.name ? 'border-destructive' : 'border-input'}`}
+                  />
+                </div>
+                <FieldError msg={fieldErrors.name} />
               </div>
             )}
 
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="email" placeholder="Email address" value={email}
-                onChange={e => setEmail(e.target.value)} required
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+            <div>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="email" placeholder="Email address" value={email}
+                  onChange={e => { setEmail(e.target.value); if (fieldErrors.email) setFieldErr('email', validateField('email', e.target.value)); }}
+                  onBlur={e => handleBlur('email', e.target.value)} required
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${fieldErrors.email ? 'border-destructive' : 'border-input'}`}
+                />
+              </div>
+              <FieldError msg={fieldErrors.email} />
             </div>
 
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type={showPassword ? 'text' : 'password'} placeholder="Password" value={password}
-                onChange={e => setPassword(e.target.value)} required
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
-                {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
-              </button>
+            <div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type={showPassword ? 'text' : 'password'} placeholder={isSignUp ? 'Password (8+ chars, letters & numbers)' : 'Password'} value={password}
+                  onChange={e => { setPassword(e.target.value); if (fieldErrors.password) setFieldErr('password', validateField('password', e.target.value)); }}
+                  onBlur={e => handleBlur('password', e.target.value)} required
+                  className={`w-full pl-10 pr-10 py-2.5 rounded-xl border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${fieldErrors.password ? 'border-destructive' : 'border-input'}`}
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                </button>
+              </div>
+              {isSignUp && <FieldError msg={fieldErrors.password} />}
             </div>
 
             {isSignUp && (
               <>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="password" placeholder="Confirm password" value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)} required
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${error === 'Passwords do not match' ? 'border-destructive' : 'border-input'}`}
-                  />
+                <div>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="password" placeholder="Confirm password" value={confirmPassword}
+                      onChange={e => { setConfirmPassword(e.target.value); if (fieldErrors.confirmPassword) setFieldErr('confirmPassword', e.target.value === password ? undefined : 'Passwords do not match'); }}
+                      onBlur={e => setFieldErr('confirmPassword', e.target.value === password ? undefined : 'Passwords do not match')} required
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${fieldErrors.confirmPassword ? 'border-destructive' : 'border-input'}`}
+                    />
+                  </div>
+                  <FieldError msg={fieldErrors.confirmPassword} />
                 </div>
 
                 <div>
@@ -309,47 +325,63 @@ export default function LoginPage() {
 
                 {/* Role-specific fields */}
                 {(role === 'staff' || role === 'manager') && (
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type="text" placeholder="Hotel name" value={hotelName}
-                      onChange={e => setHotelName(e.target.value)} required
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
+                  <div>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text" placeholder="Hotel name" value={hotelName}
+                        onChange={e => { setHotelName(e.target.value); if (fieldErrors.hotelName) setFieldErr('hotelName', validateField('hotelName', e.target.value)); }}
+                        onBlur={e => handleBlur('hotelName', e.target.value)} required
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${fieldErrors.hotelName ? 'border-destructive' : 'border-input'}`}
+                      />
+                    </div>
+                    <FieldError msg={fieldErrors.hotelName} />
                   </div>
                 )}
 
                 {role === 'staff' && (
-                  <div className="relative">
-                    <BadgeCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type="text" placeholder="Employee ID" value={employeeId}
-                      onChange={e => setEmployeeId(e.target.value)} required
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
+                  <div>
+                    <div className="relative">
+                      <BadgeCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text" placeholder="Employee ID (letters, numbers, - _ /)" value={employeeId}
+                        onChange={e => { setEmployeeId(e.target.value); if (fieldErrors.employeeId) setFieldErr('employeeId', validateField('employeeId', e.target.value)); }}
+                        onBlur={e => handleBlur('employeeId', e.target.value)} required
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${fieldErrors.employeeId ? 'border-destructive' : 'border-input'}`}
+                      />
+                    </div>
+                    <FieldError msg={fieldErrors.employeeId} />
                   </div>
                 )}
 
                 {role === 'manager' && (
-                  <div className="relative">
-                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type="text" placeholder="Business license number" value={businessLicense}
-                      onChange={e => setBusinessLicense(e.target.value)} required
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
+                  <div>
+                    <div className="relative">
+                      <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text" placeholder="Business license number" value={businessLicense}
+                        onChange={e => { setBusinessLicense(e.target.value); if (fieldErrors.businessLicense) setFieldErr('businessLicense', validateField('businessLicense', e.target.value)); }}
+                        onBlur={e => handleBlur('businessLicense', e.target.value)} required
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${fieldErrors.businessLicense ? 'border-destructive' : 'border-input'}`}
+                      />
+                    </div>
+                    <FieldError msg={fieldErrors.businessLicense} />
                   </div>
                 )}
 
                 {role === 'security' && (
                   <>
-                    <div className="relative">
-                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input
-                        type="text" placeholder="Organization name" value={organizationName}
-                        onChange={e => setOrganizationName(e.target.value)} required
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
+                    <div>
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                          type="text" placeholder="Organization name" value={organizationName}
+                          onChange={e => { setOrganizationName(e.target.value); if (fieldErrors.organizationName) setFieldErr('organizationName', validateField('organizationName', e.target.value)); }}
+                          onBlur={e => handleBlur('organizationName', e.target.value)} required
+                          className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${fieldErrors.organizationName ? 'border-destructive' : 'border-input'}`}
+                        />
+                      </div>
+                      <FieldError msg={fieldErrors.organizationName} />
                     </div>
                     <label className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-input cursor-pointer hover:bg-accent transition-colors">
                       <Upload className="w-4 h-4 text-muted-foreground" />
