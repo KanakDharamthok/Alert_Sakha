@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore, RequestableRole } from '@/store/authStore';
 import { supabase } from '@/integrations/supabase/client';
+import { isDisposableEmail } from '@/lib/disposableEmails';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Building2, BadgeCheck, FileText, Upload } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Building2, BadgeCheck, FileText, Upload, MailCheck } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
 
 export default function LoginPage() {
@@ -22,7 +24,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login, signup, loginWithGoogle, isAuthenticated } = useAuthStore();
+  const [verifyPending, setVerifyPending] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const { login, signup, loginWithGoogle, resendVerification, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
   // Once a session lands (e.g. after Google redirect), bounce to the dashboard.
@@ -40,9 +44,15 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setVerifyPending(null);
 
     if (isSignUp && password !== confirmPassword) {
       setError('Passwords do not match');
+      return;
+    }
+
+    if (isSignUp && isDisposableEmail(email)) {
+      setError('Please use a permanent email address. Disposable email providers are not allowed.');
       return;
     }
 
@@ -68,7 +78,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (isSignUp) {
-        await signup(name, email, password, {
+        const { requiresEmailConfirmation } = await signup(name, email, password, {
           requested_role: role,
           hotel_name: role === 'staff' || role === 'manager' ? hotelName : undefined,
           employee_id: role === 'staff' ? employeeId : undefined,
@@ -94,14 +104,29 @@ export default function LoginPage() {
             }
           }
         }
-        navigate('/dashboard');
+
+        // Mock acknowledgment email — surface as a friendly notification.
+        toast.success('Account created', {
+          description: `A confirmation email has been sent to ${email} with your verification steps.`,
+        });
+
+        if (requiresEmailConfirmation) {
+          setVerifyPending(email);
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         await login(email, password);
         navigate('/dashboard');
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
-      setError(message);
+      const code = (err as { code?: string }).code;
+      if (code === 'email_not_confirmed') {
+        setVerifyPending(email);
+      } else {
+        const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -114,6 +139,20 @@ export default function LoginPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Google sign-in failed.';
       setError(message);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!verifyPending) return;
+    setResending(true);
+    try {
+      await resendVerification(verifyPending);
+      toast.success('Verification email re-sent', { description: `Check the inbox for ${verifyPending}.` });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not resend email.';
+      toast.error(message);
+    } finally {
+      setResending(false);
     }
   };
 
@@ -134,6 +173,36 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="bg-card rounded-2xl card-shadow-lg border border-border p-8">
+          {verifyPending ? (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-5">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center">
+                <MailCheck className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="font-display text-lg font-semibold text-foreground">Verify your email</h2>
+                <p className="text-sm text-muted-foreground mt-1.5">
+                  We sent a verification link to <span className="text-foreground font-medium">{verifyPending}</span>.
+                  Click the link in that email to activate your account, then sign in.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <button
+                  type="button" onClick={handleResend} disabled={resending}
+                  className="w-full py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {resending ? 'Sending…' : 'Resend verification email'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setVerifyPending(null); setIsSignUp(false); }}
+                  className="w-full py-2.5 border border-border rounded-xl text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                >
+                  Back to sign in
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+          <>
           {/* Tabs */}
           <div className="flex bg-muted rounded-xl p-1 mb-6">
             <button
@@ -323,6 +392,8 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+          </>
+          )}
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
