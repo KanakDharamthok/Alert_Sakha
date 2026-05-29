@@ -1,11 +1,13 @@
 import AppLayout from '@/components/layout/AppLayout';
 import { useEmergencyStore } from '@/store/emergencyStore';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
 } from 'recharts';
-import { TrendingUp, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { TrendingUp, Clock, AlertTriangle, CheckCircle, X, MapPin } from 'lucide-react';
 
 const COLORS = ['hsl(221,83%,53%)', 'hsl(0,84%,60%)', 'hsl(38,92%,50%)', 'hsl(160,84%,39%)', 'hsl(217,91%,60%)', 'hsl(280,60%,50%)', 'hsl(30,80%,55%)'];
 
@@ -32,6 +34,8 @@ const mockTrend = [
 
 export default function AnalyticsPage() {
   const { emergencies } = useEmergencyStore();
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   const typeCounts = emergencies.reduce((acc, e) => {
     acc[e.type] = (acc[e.type] || 0) + 1;
@@ -39,8 +43,12 @@ export default function AnalyticsPage() {
   }, {} as Record<string, number>);
 
   const pieData = Object.entries(typeCounts).map(([type, count]) => ({
-    name: typeLabels[type] || type, value: count,
+    name: typeLabels[type] || type, value: count, key: type,
   }));
+
+  const filteredIncidents = selectedType
+    ? emergencies.filter((e) => e.type === selectedType)
+    : [];
 
   const active = emergencies.filter(e => e.status === 'active').length;
   const resolved = emergencies.filter(e => e.status === 'resolved' || e.status === 'closed').length;
@@ -80,12 +88,26 @@ export default function AnalyticsPage() {
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Incident Types */}
           <div className="bg-card rounded-xl border border-border p-5 card-shadow">
-            <h2 className="font-display font-semibold text-foreground mb-4">Incident Types</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-semibold text-foreground">Incident Types</h2>
+              <span className="text-xs text-muted-foreground">Click a slice to drill in</span>
+            </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={4} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                    {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  <Pie
+                    data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={4} dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    onClick={(d: { key?: string }) => d?.key && setSelectedType((cur) => (cur === d.key ? null : d.key!))}
+                    className="cursor-pointer"
+                  >
+                    {pieData.map((d, i) => (
+                      <Cell
+                        key={i}
+                        fill={COLORS[i % COLORS.length]}
+                        opacity={selectedType && selectedType !== d.key ? 0.35 : 1}
+                      />
+                    ))}
                   </Pie>
                   <Tooltip />
                 </PieChart>
@@ -95,15 +117,22 @@ export default function AnalyticsPage() {
 
           {/* Response Times */}
           <div className="bg-card rounded-xl border border-border p-5 card-shadow">
-            <h2 className="font-display font-semibold text-foreground mb-4">Avg Response Time (min)</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-semibold text-foreground">Avg Response Time (min)</h2>
+              <span className="text-xs text-muted-foreground">Click a bar for the day</span>
+            </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={mockResponseTimes}>
+                <BarChart data={mockResponseTimes} onClick={(s: { activeLabel?: string }) => s?.activeLabel && setSelectedDay((cur) => (cur === s.activeLabel ? null : s.activeLabel!))}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,91%)" />
                   <XAxis dataKey="day" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip />
-                  <Bar dataKey="avg" fill="hsl(221,83%,53%)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="avg" radius={[6, 6, 0, 0]} className="cursor-pointer">
+                    {mockResponseTimes.map((d) => (
+                      <Cell key={d.day} fill="hsl(221,83%,53%)" opacity={selectedDay && selectedDay !== d.day ? 0.35 : 1} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -141,6 +170,79 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
+
+        <AnimatePresence>
+          {(selectedType || selectedDay) && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+              className="bg-card rounded-xl border border-border p-5 card-shadow"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="font-display font-semibold text-foreground">
+                    {selectedType
+                      ? `${typeLabels[selectedType] || selectedType} incidents`
+                      : `Response detail · ${selectedDay}`}
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {selectedType
+                      ? `${filteredIncidents.length} matching ${filteredIncidents.length === 1 ? 'incident' : 'incidents'}`
+                      : 'Sample incidents that contributed to this day’s average'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setSelectedType(null); setSelectedDay(null); }}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-3.5 h-3.5" /> Clear
+                </button>
+              </div>
+
+              {selectedType ? (
+                filteredIncidents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No incidents recorded for this category yet.</p>
+                ) : (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {filteredIncidents.map((e) => (
+                      <Link
+                        key={e.id} to={`/emergencies/${e.id}`}
+                        className="block p-4 rounded-xl border border-border hover:bg-accent transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="text-sm font-semibold text-foreground">{e.title}</h3>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-semibold bg-muted text-muted-foreground capitalize">
+                            {e.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {e.location}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{e.description}</p>
+                      </Link>
+                    ))}
+                  </div>
+                )
+              ) : (
+                <div className="grid sm:grid-cols-3 gap-3 text-sm">
+                  <div className="p-4 rounded-xl border border-border">
+                    <div className="text-xs text-muted-foreground">Avg response</div>
+                    <div className="font-display text-xl font-bold mt-1">
+                      {mockResponseTimes.find((r) => r.day === selectedDay)?.avg} min
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl border border-border">
+                    <div className="text-xs text-muted-foreground">Incidents handled</div>
+                    <div className="font-display text-xl font-bold mt-1">{Math.floor(Math.random() * 6) + 4}</div>
+                  </div>
+                  <div className="p-4 rounded-xl border border-border">
+                    <div className="text-xs text-muted-foreground">SLA met</div>
+                    <div className="font-display text-xl font-bold mt-1">{Math.floor(Math.random() * 10) + 88}%</div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </AppLayout>
   );
