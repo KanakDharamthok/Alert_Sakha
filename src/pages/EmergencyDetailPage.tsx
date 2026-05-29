@@ -3,10 +3,13 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmergencyStore } from '@/store/emergencyStore';
 import { motion } from 'framer-motion';
-import { ArrowLeft, AlertTriangle, MapPin, User, Clock } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, MapPin, User, Clock, LifeBuoy } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import EmergencyChat from '@/components/emergency/EmergencyChat';
 import EmergencyMap from '@/components/emergency/EmergencyMap';
+import { useAuthStore } from '@/store/authStore';
+import { isStaffRole } from '@/lib/roles';
+import { toast } from 'sonner';
 
 const severityColor: Record<string, string> = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
@@ -66,6 +69,8 @@ export default function EmergencyDetailPage() {
   const { id } = useParams();
   const { getEmergency } = useEmergencyStore();
   const emergency = getEmergency(id || '');
+  const role = useAuthStore((s) => s.user?.role);
+  const canManage = isStaffRole(role);
 
   if (!emergency) {
     return (
@@ -193,6 +198,7 @@ export default function EmergencyDetailPage() {
 
             <div className="bg-card rounded-xl border border-border p-5 card-shadow">
               <h3 className="font-display font-semibold text-foreground mb-3">Actions</h3>
+              {canManage ? (
               <div className="space-y-2">
                 <button className="w-full py-2.5 bg-warning text-warning-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
                   Update Status
@@ -204,6 +210,20 @@ export default function EmergencyDetailPage() {
                   Assign Staff
                 </button>
               </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    You're viewing this incident as a guest. Tap below to alert nearby responders.
+                  </p>
+                  <button
+                    onClick={() => toast.success('Assistance requested', { description: 'A responder will contact you shortly.' })}
+                    className="w-full py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                  >
+                    <LifeBuoy className="w-4 h-4" />
+                    Request Assistance
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
