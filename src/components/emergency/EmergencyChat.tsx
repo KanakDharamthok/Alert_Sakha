@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Send, User } from 'lucide-react';
 
 interface ChatMessage {
@@ -25,11 +25,12 @@ interface EmergencyChatProps {
 export default function EmergencyChat({ emergencyId: _emergencyId }: EmergencyChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(mockMessages);
   const [input, setInput] = useState('');
+  const [typing, setTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, typing]);
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -42,6 +43,18 @@ export default function EmergencyChat({ emergencyId: _emergencyId }: EmergencyCh
     };
     setMessages(prev => [...prev, newMsg]);
     setInput('');
+    // Simulate a teammate replying for a polished live feel.
+    setTyping(true);
+    setTimeout(() => {
+      setTyping(false);
+      setMessages(prev => [...prev, {
+        id: `${Date.now()}-r`,
+        sender: 'Maria Santos', senderRole: 'Security',
+        message: 'Acknowledged. Standing by for further updates.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isCurrentUser: false,
+      }]);
+    }, 1400);
   };
 
   return (
@@ -67,6 +80,21 @@ export default function EmergencyChat({ emergencyId: _emergencyId }: EmergencyCh
           </motion.div>
         ))}
         <div ref={bottomRef} />
+        <AnimatePresence>
+          {typing && (
+            <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="flex gap-3 items-center">
+              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
+                <User className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <div className="px-3.5 py-2 rounded-xl bg-muted inline-flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '120ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '240ms' }} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="flex gap-2">

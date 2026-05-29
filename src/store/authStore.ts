@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
+import { isDisposableEmail } from '@/lib/disposableEmails';
 import type { Session } from '@supabase/supabase-js';
 
 export type UserRole = 'guest' | 'staff' | 'manager' | 'security' | 'admin';
@@ -22,6 +23,12 @@ export interface User {
   email: string;
   role: UserRole;
   avatar?: string;
+  phone?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  employee_id?: string;
+  department?: string;
+  mfa_enabled?: boolean;
 }
 
 interface AuthState {
@@ -31,14 +38,16 @@ interface AuthState {
   loading: boolean;
   initialize: () => () => void;
   login: (email: string, password: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
   signup: (
     name: string,
     email: string,
     password: string,
     request: RoleRequestPayload
-  ) => Promise<void>;
+  ) => Promise<{ requiresEmailConfirmation: boolean }>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 async function buildUser(session: Session | null): Promise<User | null> {
@@ -47,7 +56,10 @@ async function buildUser(session: Session | null): Promise<User | null> {
   const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
 
   const [{ data: profile }, { data: roleRow }] = await Promise.all([
-    supabase.from('profiles').select('display_name, avatar_url').eq('user_id', u.id).maybeSingle(),
+    supabase
+      .from('profiles')
+      .select('display_name, avatar_url, phone, emergency_contact_name, emergency_contact_phone, employee_id, department, mfa_enabled')
+      .eq('user_id', u.id).maybeSingle(),
     supabase.from('user_roles').select('role').eq('user_id', u.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
 
@@ -56,6 +68,12 @@ async function buildUser(session: Session | null): Promise<User | null> {
     email: u.email ?? '',
     name: profile?.display_name || (meta.full_name as string) || (meta.display_name as string) || (u.email?.split('@')[0] ?? 'User'),
     avatar: profile?.avatar_url || (meta.avatar_url as string | undefined),
+    phone: profile?.phone ?? undefined,
+    emergency_contact_name: profile?.emergency_contact_name ?? undefined,
+    emergency_contact_phone: profile?.emergency_contact_phone ?? undefined,
+    employee_id: profile?.employee_id ?? undefined,
+    department: profile?.department ?? undefined,
+    mfa_enabled: profile?.mfa_enabled ?? false,
     role: (roleRow?.role as UserRole) ?? 'guest',
   };
 }
@@ -88,12 +106,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   login: async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      // Normalise the verification error so the UI can react to it.
+      const code = (error as { code?: string }).code;
+      if (code === 'email_not_confirmed' || /confirm/i.test(error.message)) {
+        const e = new Error('email_not_confirmed');
+        (e as Error & { code?: string }).code = 'email_not_confirmed';
+        throw e;
+      }
+      throw error;
+    }
+  },
+
+  resendVerification: async (email) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
     if (error) throw error;
   },
 
   signup: async (name, email, password, request) => {
+    if (isDisposableEmail(email)) {
+      throw new Error('Disposable or temporary email addresses are not allowed.');
+    }
     const redirectUrl = `${window.location.origin}/dashboard`;
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -110,6 +149,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       },
     });
     if (error) throw error;
+    // If Supabase returns a user but no session, email confirmation is required.
+    return { requiresEmailConfirmation: !data.session };
   },
 
   loginWithGoogle: async () => {
@@ -123,5 +164,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await supabase.auth.signOut();
     set({ user: null, session: null, isAuthenticated: false });
     void get;
+  },
+  refresh: async () => {
+    const { data } = await supabase.auth.getSession();
+    const user = await buildUser(data.session);
+    set({ user });
   },
 }));
