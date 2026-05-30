@@ -4,6 +4,7 @@ import { useAuthStore, RequestableRole } from '@/store/authStore';
 import { supabase } from '@/integrations/supabase/client';
 import { isDisposableEmail } from '@/lib/disposableEmails';
 import { validateField, FieldName } from '@/lib/signupValidation';
+import { sendWelcomeEmail } from '@/lib/emailjs';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Building2, BadgeCheck, FileText, Upload, MailCheck } from 'lucide-react';
@@ -115,10 +116,8 @@ export default function LoginPage() {
           }
         }
 
-        // Fire welcome email via Resend (non-blocking).
-        supabase.functions
-          .invoke('send-welcome-email', { body: { email, name, role } })
-          .catch((err) => console.error('welcome email failed', err));
+        // Fire welcome email via EmailJS (non-blocking, never throws).
+        sendWelcomeEmail({ email, name, role });
 
         toast.success('Welcome to AlertSakha', {
           description: `Account created for ${email}. A welcome email is on its way.`,
