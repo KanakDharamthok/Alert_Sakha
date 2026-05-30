@@ -115,16 +115,17 @@ export default function LoginPage() {
           }
         }
 
-        // Mock acknowledgment email — surface as a friendly notification.
-        toast.success('Account created', {
-          description: `A confirmation email has been sent to ${email} with your verification steps.`,
+        // Fire welcome email via Resend (non-blocking).
+        supabase.functions
+          .invoke('send-welcome-email', { body: { email, name, role } })
+          .catch((err) => console.error('welcome email failed', err));
+
+        toast.success('Welcome to AlertSakha', {
+          description: `Account created for ${email}. A welcome email is on its way.`,
         });
 
-        if (requiresEmailConfirmation) {
-          setVerifyPending(email);
-        } else {
-          navigate('/dashboard');
-        }
+        // Email confirmation is bypassed — go straight to the dashboard.
+        navigate('/dashboard');
       } else {
         await login(email, password);
         navigate('/dashboard');
