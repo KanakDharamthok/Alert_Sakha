@@ -188,10 +188,10 @@ export default function LoginPage() {
                 <MailCheck className="w-7 h-7" />
               </div>
               <div>
-                <h2 className="font-display text-lg font-semibold text-foreground">Verify your email</h2>
+                <h2 className="font-display text-lg font-semibold text-foreground">Verification email sent!</h2>
                 <p className="text-sm text-muted-foreground mt-1.5">
-                  We sent a verification link to <span className="text-foreground font-medium">{verifyPending}</span>.
-                  Click the link in that email to activate your account, then sign in.
+                  Please check your inbox at <span className="text-foreground font-medium">{verifyPending}</span> and
+                  click the verification link to activate your account.
                 </p>
               </div>
               <div className="space-y-2">
