@@ -4,7 +4,6 @@ import { useAuthStore, RequestableRole } from '@/store/authStore';
 import { supabase } from '@/integrations/supabase/client';
 import { isDisposableEmail } from '@/lib/disposableEmails';
 import { validateField, FieldName } from '@/lib/signupValidation';
-import { sendWelcomeEmail } from '@/lib/emailjs';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Building2, BadgeCheck, FileText, Upload, MailCheck } from 'lucide-react';
@@ -116,15 +115,14 @@ export default function LoginPage() {
           }
         }
 
-        // Fire welcome email via EmailJS (non-blocking, never throws).
-        sendWelcomeEmail({ email, name, role });
-
-        toast.success('Welcome to AlertSakha', {
-          description: `Account created for ${email}. A welcome email is on its way.`,
-        });
-
-        // Email confirmation is bypassed — go straight to the dashboard.
-        navigate('/dashboard');
+        if (requiresEmailConfirmation) {
+          // Show the verify-your-email screen and wait for the user to click the link.
+          setVerifyPending(email);
+        } else {
+          // Session already active (confirmation disabled) — go straight in.
+          toast.success('Welcome to AlertSakha', { description: `Account created for ${email}.` });
+          navigate('/dashboard');
+        }
       } else {
         await login(email, password);
         navigate('/dashboard');
@@ -132,7 +130,8 @@ export default function LoginPage() {
     } catch (err) {
       const code = (err as { code?: string }).code;
       if (code === 'email_not_confirmed') {
-        setVerifyPending(email);
+        // User tried to sign in before verifying.
+        setError('Email not verified. Please verify your email address first.');
       } else {
         const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
         setError(message);
