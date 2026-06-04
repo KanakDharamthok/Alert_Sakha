@@ -109,6 +109,7 @@ export default function SOSModal({ open, onClose }: SOSModalProps) {
       addEmergency({
         title, type, severity, description, location,
         reportedBy: user?.name ?? 'Current User',
+        reportedByUserId: user?.id,
         imageUrls,
       });
       toast.success('Emergency reported');
