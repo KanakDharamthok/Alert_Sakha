@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useNotificationStore } from '@/store/notificationStore';
+import { isStaffRole } from '@/lib/roles';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, AlertTriangle, Bell, User, LogOut, Menu, X, ChevronDown, BarChart3, Shield
@@ -18,7 +19,11 @@ const baseNavItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuthStore();
-  const { unreadCount } = useNotificationStore();
+  const notifications = useNotificationStore((s) => s.notifications);
+  const visible = isStaffRole(user?.role)
+    ? notifications
+    : notifications.filter((n) => !!user && (n.userId === user.id || n.assignedToUserId === user.id));
+  const unreadCount = visible.filter((n) => !n.read).length;
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
