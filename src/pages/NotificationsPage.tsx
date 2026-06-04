@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNotificationStore, Notification } from '@/store/notificationStore';
+import { useAuthStore } from '@/store/authStore';
+import { isStaffRole } from '@/lib/roles';
 import { motion } from 'framer-motion';
 import { Bell, AlertTriangle, Info, UserCheck, RefreshCw, CheckCheck, MapPin, Phone, Clock } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
@@ -20,7 +22,15 @@ const typeColor: Record<string, string> = {
 };
 
 export default function NotificationsPage() {
-  const { notifications, markAsRead, markAllRead, unreadCount } = useNotificationStore();
+  const { notifications, markAsRead, markAllRead } = useNotificationStore();
+  const user = useAuthStore((s) => s.user);
+  const canSeeAll = isStaffRole(user?.role);
+  const visible = canSeeAll
+    ? notifications
+    : notifications.filter(
+        (n) => !!user && (n.userId === user.id || n.assignedToUserId === user.id),
+      );
+  const unreadCount = visible.filter((n) => !n.read).length;
   const [active, setActive] = useState<Notification | null>(null);
 
   const openDetail = (n: Notification) => {
@@ -44,7 +54,12 @@ export default function NotificationsPage() {
         </div>
 
         <div className="space-y-2">
-          {notifications.map((n, i) => {
+          {visible.length === 0 && (
+            <div className="bg-card rounded-xl border border-border p-8 text-center text-sm text-muted-foreground">
+              You don't have any notifications yet.
+            </div>
+          )}
+          {visible.map((n, i) => {
             const Icon = typeIcon[n.type] || Bell;
             return (
               <motion.div

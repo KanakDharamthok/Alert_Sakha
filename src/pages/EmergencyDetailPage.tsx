@@ -216,7 +216,26 @@ export default function EmergencyDetailPage() {
                     You're viewing this incident as a guest. Tap below to alert nearby responders.
                   </p>
                   <button
-                    onClick={() => toast.success('Assistance requested', { description: 'A responder will contact you shortly.' })}
+                    onClick={async () => {
+                      if (!useAuthStore.getState().user) {
+                        toast.error('Please sign in to request assistance.');
+                        return;
+                      }
+                      const me = useAuthStore.getState().user!;
+                      const { error } = await supabase.from('assistance_requests').insert({
+                        emergency_id: emergency.id,
+                        user_id: me.id,
+                        requester_name: me.name,
+                        requester_avatar: me.avatar ?? null,
+                        location: emergency.location,
+                        message: `Needs assistance with: ${emergency.title}`,
+                      });
+                      if (error) {
+                        toast.error('Could not send request', { description: error.message });
+                      } else {
+                        toast.success('Assistance requested', { description: 'A responder will contact you shortly.' });
+                      }
+                    }}
                     className="w-full py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
                   >
                     <LifeBuoy className="w-4 h-4" />

@@ -1,44 +1,39 @@
-## AlertSakha Refactor Plan
 
-A large multi-area refactor. Grouped into 4 workstreams matching the request.
+# Plan: User-Scoped Data + Realtime Sync
 
-### 1. Authentication & Signup
+## 1. Database changes (migration)
 
-- **Email-not-confirmed handling** (`LoginPage`, `authStore.login`): catch the `email_not_confirmed` error from Supabase and render a friendly inline state ("Check your inbox to verify…") with a "Resend verification email" button calling `supabase.auth.resend({ type: 'signup', email })`.
-- **Auto-session when confirm disabled**: `signup()` already returns a session if confirm is off — surface that to the UI so the user is routed straight to `/dashboard`; otherwise show the verification-pending screen.
-- **Disposable-email blocklist** (`signup` form + zod schema): reject common throwaway domains (mailinator, tempmail, 10minutemail, guerrillamail, yopmail, ellbit, trashmail, dispostable, etc.). Centralize the list in `src/lib/disposableEmails.ts`.
-- **Acknowledgment email (mock)**: add a toast + an in-app notification row written to the `notifications` store on successful signup ("Welcome to AlertSakha — verify your email to secure your account"). No real email infra changes — pure mock per request.
+**New tables:**
+- `chat_messages` — emergency_id, user_id, sender_name, sender_avatar, sender_role, message, created_at
+- `assistance_requests` — emergency_id, user_id, requester_name, message, status (pending/acknowledged/resolved), created_at
 
-### 2. Role-Based UI (RBAC)
+**RLS policies:**
+- `chat_messages`: any authenticated user can SELECT messages in a room; INSERT only with own `user_id`.
+- `assistance_requests`: requester can SELECT/INSERT own rows; staff/manager/security/admin can SELECT all and UPDATE status.
+- `notifications` / `emergencies`: extend SELECT policy so regular users (guest role) only see rows where `user_id = auth.uid()` or `assigned_to = auth.uid()`; staff roles see all.
 
-- Add a `useRole()` helper reading from `authStore`. Define `STAFF_ROLES = ['staff','security','manager','admin']`.
-- **`EmergencyDetailPage` actions panel**: wrap "Update Status / Mark Resolved / Assign Staff" in `{STAFF_ROLES.includes(role) && …}`.
-- **Guest fallback**: render a "Request Assistance" CTA + tracking/map view for `guest` role.
+**Realtime:**
+- `ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages, assistance_requests;`
+- `REPLICA IDENTITY FULL` on both.
 
-### 3. Interactivity
+## 2. Frontend
 
-- **Notifications drill-in** (`NotificationsPage`): make rows clickable → open a `Sheet` (shadcn) with full payload — logs timeline, room/floor, coordinator name/phone, status badges.
-- **Analytics drill-down** (`AnalyticsPage`): wire `onClick` on Recharts Pie slice + Bar segments. Selected category drives a filtered list of mock incidents shown below the chart with cards (title, location, status, time).
-- **Live chat** (`EmergencyChat`): already mostly working (send + enter handled). Ensure timestamp uses current locale, autoscroll on send, optimistic render, and persist into local state so messages survive within session. Add subtle typing-indicator animation.
+**Notifications (`NotificationsPage` + `notificationStore`):** Filter feed by role — guests see only `user_id = me OR assigned_to = me`; staff/admin see all.
 
-### 4. Profile Overhaul (`ProfilePage`)
+**Analytics (`AnalyticsPage`):** When role is guest, scope queries (incidents, donut chart, tables) to `reported_by = auth.uid()`. Staff roles unchanged.
 
-- Sectioned layout: **Avatar/Identity → Contact → Emergency Contact → Work/Role → Security Settings**.
-- Editable fields: avatar upload (uses existing storage bucket or a new `avatars` bucket — will reuse `id-proofs` pattern but add public `avatars` bucket via migration), Full Name, Phone, Alt Emergency Contact (name + phone), Employee/Citizen ID, Assigned Department, Role badge (read-only).
-- **Security Settings** subsection: change password (`supabase.auth.updateUser({ password })`), MFA toggle (UI toggle that calls `supabase.auth.mfa.enroll/unenroll` — mock visual state if not yet configured).
-- Persist new profile fields → extend `profiles` table with: `phone`, `emergency_contact_name`, `emergency_contact_phone`, `employee_id`, `department`. Migration includes proper GRANTs (already present pattern).
+**EmergencyChat:** Switch from mock to Supabase-backed:
+- Load existing messages for `emergencyId` on mount.
+- Insert new message with `user_id`, `sender_name` (from profile), `sender_avatar`, `sender_role`.
+- Subscribe to `postgres_changes` INSERT on `chat_messages` filtered by `emergency_id`.
 
-### Technical notes
+**Request Assistance button (`EmergencyDetailPage`):** Replace toast-only with INSERT into `assistance_requests` carrying current user id + name.
 
-- New migration: add columns to `public.profiles` + create `avatars` public storage bucket with RLS allowing owner write / public read.
-- New files: `src/lib/disposableEmails.ts`, `src/lib/roles.ts`, `src/components/notifications/NotificationDetailSheet.tsx`, `src/components/profile/SecuritySettings.tsx`, `src/components/profile/AvatarUpload.tsx`.
-- Edited: `LoginPage`, `authStore`, `ProfilePage`, `NotificationsPage`, `AnalyticsPage`, `EmergencyDetailPage`, `EmergencyChat` (polish only).
-- All UI uses existing semantic tokens — no raw color classes.
-- Framer-motion for sheet/modal entrance and chart drill-down list.
+**Staff dashboard:** Add realtime listener on `assistance_requests` to show toast/notification when a new row arrives (only for staff roles).
 
-### Out of scope (confirm if you want included)
+## Technical notes
 
-- Real transactional email infra (acknowledgment is mocked per your wording "Mock or setup a state trigger").
-- Real MFA enrollment flow (UI scaffold only unless you want full TOTP).
-
-Approve and I'll ship it.
+- Use `useAuthStore` for current user (id, name, avatar, role).
+- Use `isStaffRole` helper to gate behavior.
+- Chat subscription cleanup on unmount via `supabase.removeChannel`.
+- For notifications/emergencies user-scoping, check current schema first — may already have `reported_by`/`user_id` columns.
