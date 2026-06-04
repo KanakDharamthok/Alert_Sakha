@@ -7,6 +7,8 @@ export interface Notification {
   type: 'sos' | 'update' | 'assignment' | 'info';
   read: boolean;
   createdAt: string;
+  userId?: string;
+  assignedToUserId?: string;
   location?: { floor: string; room?: string; zone?: string };
   coordinator?: { name: string; role: string; phone: string };
   logs?: { time: string; event: string; by: string }[];
@@ -73,6 +75,7 @@ const mockNotifications: Notification[] = [
 interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
+  addNotification: (n: Omit<Notification, 'id' | 'read' | 'createdAt'> & { createdAt?: string }) => void;
   markAsRead: (id: string) => void;
   markAllRead: () => void;
 }
@@ -80,6 +83,16 @@ interface NotificationState {
 export const useNotificationStore = create<NotificationState>((set, get) => ({
   notifications: mockNotifications,
   unreadCount: mockNotifications.filter(n => !n.read).length,
+  addNotification: (n) => {
+    const next: Notification = {
+      id: `local-${Date.now()}`,
+      read: false,
+      createdAt: n.createdAt ?? new Date().toISOString(),
+      ...n,
+    };
+    const updated = [next, ...get().notifications];
+    set({ notifications: updated, unreadCount: updated.filter(x => !x.read).length });
+  },
   markAsRead: (id) => {
     const updated = get().notifications.map(n => n.id === id ? { ...n, read: true } : n);
     set({ notifications: updated, unreadCount: updated.filter(n => !n.read).length });
