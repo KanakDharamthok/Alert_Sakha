@@ -1,5 +1,7 @@
 import AppLayout from '@/components/layout/AppLayout';
 import { useEmergencyStore } from '@/store/emergencyStore';
+import { useAuthStore } from '@/store/authStore';
+import { isStaffRole } from '@/lib/roles';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -33,7 +35,12 @@ const mockTrend = [
 ];
 
 export default function AnalyticsPage() {
-  const { emergencies } = useEmergencyStore();
+  const { emergencies: allEmergencies } = useEmergencyStore();
+  const user = useAuthStore((s) => s.user);
+  const canSeeAll = isStaffRole(user?.role);
+  const emergencies = canSeeAll
+    ? allEmergencies
+    : allEmergencies.filter((e) => !!user && e.reportedByUserId === user.id);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
