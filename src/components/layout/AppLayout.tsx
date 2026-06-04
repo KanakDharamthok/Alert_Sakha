@@ -7,7 +7,9 @@ import {
   LayoutDashboard, AlertTriangle, Bell, User, LogOut, Menu, X, ChevronDown, BarChart3, Shield
 } from 'lucide-react';
 import logoImg from '@/assets/logo.png';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const baseNavItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -20,6 +22,7 @@ const baseNavItems = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuthStore();
   const notifications = useNotificationStore((s) => s.notifications);
+  const addNotification = useNotificationStore((s) => s.addNotification);
   const visible = isStaffRole(user?.role)
     ? notifications
     : notifications.filter((n) => !!user && (n.userId === user.id || n.assignedToUserId === user.id));
@@ -31,6 +34,43 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = user?.role === 'admin'
     ? [...baseNavItems, { path: '/admin/approvals', label: 'Approvals', icon: Shield }]
     : baseNavItems;
+
+  // Staff/admin: live-listen for new assistance requests and surface them as toasts + notifications.
+  useEffect(() => {
+    if (!user || !isStaffRole(user.role)) return;
+    const channel = supabase
+      .channel('assistance-requests-staff')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'assistance_requests' },
+        (payload) => {
+          const r = payload.new as {
+            id: string;
+            requester_name: string;
+            location: string | null;
+            message: string | null;
+            user_id: string;
+            created_at: string;
+          };
+          toast('New assistance request', {
+            description: `${r.requester_name}${r.location ? ` · ${r.location}` : ''}`,
+          });
+          addNotification({
+            title: 'Assistance Requested',
+            message: r.message || `${r.requester_name} requested assistance.`,
+            type: 'sos',
+            severity: 'high',
+            userId: r.user_id,
+            location: r.location ? { floor: r.location } : undefined,
+            createdAt: r.created_at,
+          });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, addNotification]);
 
   const handleLogout = async () => {
     await logout();
